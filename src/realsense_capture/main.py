@@ -26,6 +26,7 @@ import sys
 from enum import Enum
 from typing import List, Tuple
 
+import cv2
 import numpy as np
 import pyrealsense2 as rs
 
@@ -45,25 +46,7 @@ _logger = logging.getLogger(__name__)
 # when using this Python module as a library.
 
 
-def fib(n):
-    """Fibonacci example function
-
-    Args:
-      n (int): integer
-
-    Returns:
-      int: n-th Fibonacci number
-    """
-    assert n > 0
-    a, b = 1, 1
-    for i in range(n - 1):
-        a, b = b, a + b
-    return a
-
-
 # ----------------------------- Helper functions ----------------------------- #
-
-
 class Device:
     """Store information of device (pipeline, pipeline-profile, align, product-line)
 
@@ -401,15 +384,17 @@ class RealsenseCapture(metaclass=SingleInstanceMetaClass):
         for _ in range(dispose_frames_for_stablisation):
             _ = self.read()
 
-    def read(self, return_depth=False, depth_filter=None):
+    def read(self, return_depth: bool = False, depth_filter: object = None):
         """Read data from camera
 
-        :param return_depth: Whether return depth image or not, defaults to False
-        :type return_depth: bool, optional
-        :param depth_filter: [description], defaults to None
-        :type depth_filter: [type], optional
-        :return: Whether having data, and data
-        :rtype: tuple(bool, array or list of array)
+        Args:
+            return_depth (bool, optional): Whether return depth image or not.
+                Defaults to False.
+            depth_filter (object, optional): Function to filter the depth frame.
+                Defaults to None.
+
+        Returns:
+            [type]: [description]
         """
         try:
             frames = self._enabled_device.pipeline.wait_for_frames()
@@ -428,8 +413,8 @@ class RealsenseCapture(metaclass=SingleInstanceMetaClass):
     def isOpened(self):
         """Check whether the camera is open(ready to use)
 
-        :return: Is open or not
-        :rtype: bool
+        Returns:
+            bool: Is open or not
         """
         return self._camera_is_open
 
@@ -440,13 +425,15 @@ class RealsenseCapture(metaclass=SingleInstanceMetaClass):
 
     def get_intrinsics(self, frame_type: DataType = DataType.COLOR_FRAME):
         """Get intrinsics of a frame(depth ? color)
-        :In this case, after alignment, intrinsics of depth and color frames
-        :are the same
+        In this case, after alignment, intrinsics of depth and color frames
+        are the same
 
-        :param frame_type: Type of frame, defaults to DataType.COLOR_FRAME
-        :type frame_type: DataType, optional
-        :return: intrinsics
-        :rtype: rs.intrinsics
+        Args:
+            frame_type (DataType, optional): Type of frame.
+                Defaults to DataType.COLOR_FRAME.
+
+        Returns:
+            rs.intrinsics: Intrinsics
         """
         assert frame_type == DataType.COLOR_FRAME or frame_type == DataType.DEPTH_FRAME
 
@@ -477,8 +464,8 @@ class RealsenseCapture(metaclass=SingleInstanceMetaClass):
     def get_depth_to_color_extrinsics(self):
         """Get extrinsics from depth frame to color frame
 
-        :return: Extrinsics
-        :rtype: rs.extrinsics
+        Returns:
+            rs.extrinsics: Extrinsics
         """
         color_frame = self.get_data_according_type(DataType.COLOR_FRAME)
         depth_frame = self.get_data_according_type(DataType.DEPTH_FRAME)
@@ -669,6 +656,35 @@ def main(args):
     )  # L515
     realsense_capture.enable_device()
     realsense_capture.warm_up()
+
+    # Observe image
+    observe = Observation.COLOR
+    while 1:
+        if realsense_capture.isOpened():
+            # Capture image
+            status, images = realsense_capture.read(
+                return_depth=True
+            )  # , depth_filter=post_process_depth_frame
+            # Display image
+            if status:
+                color_image, depth_image = images
+                if observe == Observation.COLOR:
+                    cv2.imshow("Test", cv2.cvtColor(color_image, cv2.COLOR_RGB2BGR))
+                else:
+                    cv2.imshow("Test", depth_image)
+                key = cv2.waitKey(100)
+                if key & 0xFF == ord("q"):
+                    break
+                elif key & 0xFF == ord("1"):
+                    observe = Observation.COLOR
+                elif key & 0xFF == ord("2"):
+                    observe = Observation.DEPTH
+        else:
+            break
+
+    # Release capture
+    realsense_capture.release()
+    print("Byebye!")
 
     _logger.info("Script ends here")
 
