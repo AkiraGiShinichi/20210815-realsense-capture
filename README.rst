@@ -3,13 +3,46 @@ realsense-capture
 =================
 
 
-Realsense Capture package
+Realsense-Capture package
 
 
 Description
 ===========
 
-A longer description of your project goes here...
+A package to simply detect and connect to the Realsense camera.
+
+All steps of Creating and Developing projects
+=============================================
+
+Preparing::
+***********
+
+    putup -i realsense-capture
+    cd realsense-capture
+    pip install -e . # install dependencies
+    git init --initial-branch=main
+    git remote add origin https://...
+
+    pre-commit install
+    pre-commit autoupdate
+    
+Checking::
+**********
+    
+    tox # unit tests
+    pre-commit run --all-files # check conventions
+
+Push modification::
+*******************
+
+    git tag v0.1.0 # assign version
+    tox -e build # build packages
+    tox -e docs # build documents
+
+    git add .
+    git push -u origin main
+
+
 
 
 .. _pyscaffold-notes:
