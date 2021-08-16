@@ -182,8 +182,7 @@ class SingleInstanceMetaClass(type):
             return cls.__instance
 
 
-def get_depth_at_pixel(
-        depth_frame: rs.frame, pixel_x: int, pixel_y: int) -> int:
+def get_depth_at_pixel(depth_frame: rs.frame, pixel_x: int, pixel_y: int) -> int:
     """Get the depth value at the desired image point
 
     Args:
@@ -235,7 +234,7 @@ def convert_depth_frame_to_points(
         depth_scale (float, optional): Scale factor of depth. Defaults to 0.001.
 
     Returns:
-        (x, y, z) (Tuple[np.ndarray]): 3 list of x coordinates, y coordinates 
+        (x, y, z) (Tuple[np.ndarray]): 3 list of x coordinates, y coordinates
             and z coordinates
         x (np.ndarray): x coordinates in meters
         y (np.ndarray): y coordinates in meters
@@ -358,7 +357,7 @@ class RealsenseCapture(metaclass=SingleInstanceMetaClass):
         Or providing exact device-serial, or providing device-id for convenience
 
         Args:
-            enable_ir_emitter (bool, optional): Enable/Disable the IR-Emitter of the 
+            enable_ir_emitter (bool, optional): Enable/Disable the IR-Emitter of the
                 device. Defaults to False.
 
         Examples:
@@ -388,15 +387,15 @@ class RealsenseCapture(metaclass=SingleInstanceMetaClass):
             )
 
             self._camera_is_open = True
-            print(f"\n    RealsenseCapture - initialized")
+            print("\n    RealsenseCapture - initialized")
         except Exception as e:
-            print(f"\n    RealsenseCapture - initialized not success")
+            print(f"\n    RealsenseCapture - initialized not success - {e}")
 
     def warm_up(self, dispose_frames_for_stablisation: int = 30) -> None:
         """Dispose some frames for camera-stablisation
 
         Args:
-            dispose_frames_for_stablisation (int, optional): Number of disposing 
+            dispose_frames_for_stablisation (int, optional): Number of disposing
                 frames. Defaults to 30.
         """
         for _ in range(dispose_frames_for_stablisation):
@@ -418,13 +417,12 @@ class RealsenseCapture(metaclass=SingleInstanceMetaClass):
             self._frames = self._enabled_device.align.process(frames)
 
             if return_depth:  # Return RGB image and Depth image
-                return True, self.get_data_according_type(
-                    DataType.IMAGES, depth_filter)
+                return True, self.get_data_according_type(DataType.IMAGES, depth_filter)
             else:  # Return RGB image only
                 return True, self.get_data_according_type(DataType.COLOR_IMAGE)
         except Exception as e:
             self._camera_is_open = False
-            print(f"\n    RealsenseCapture - read: error")
+            print(f"\n    RealsenseCapture - read: error {e}")
             return False, None
 
     def isOpened(self):
@@ -437,7 +435,7 @@ class RealsenseCapture(metaclass=SingleInstanceMetaClass):
 
     def release(self):
         """Release/Disable cameras"""
-        print(f"\n    RealsenseCapture - release")
+        print("\n    RealsenseCapture - release")
         self._config.disable_all_streams()
 
     def get_intrinsics(self, frame_type: DataType = DataType.COLOR_FRAME):
@@ -499,7 +497,7 @@ class RealsenseCapture(metaclass=SingleInstanceMetaClass):
         """Get depth frame
 
         Args:
-            depth_filter (object, optional): Function to filter depth frame. 
+            depth_filter (object, optional): Function to filter depth frame.
                 Defaults to None.
 
         Returns:
@@ -519,9 +517,9 @@ class RealsenseCapture(metaclass=SingleInstanceMetaClass):
         """Get data according to type
 
         Args:
-            data_type (DataType, optional): Expected type of data. 
+            data_type (DataType, optional): Expected type of data.
                 Defaults to DataType.FRAMES.
-            depth_filter ([type], optional): Function to filter depth frame. 
+            depth_filter ([type], optional): Function to filter depth frame.
                 Defaults to None.
 
         Returns:
@@ -542,8 +540,7 @@ class RealsenseCapture(metaclass=SingleInstanceMetaClass):
             return np.asarray(self.get_depth_frame(depth_filter).get_data())
         elif data_type == DataType.IMAGES:
             color_image = np.asarray(self._frames.get_color_frame().get_data())
-            depth_image = np.asarray(
-                self.get_depth_frame(depth_filter).get_data())
+            depth_image = np.asarray(self.get_depth_frame(depth_filter).get_data())
             return (color_image, depth_image)
 
     def get_device_id_from_serial(self, serial: str) -> int:
@@ -612,8 +609,7 @@ def parse_args(args):
     Returns:
       :obj:`argparse.Namespace`: command line parameters namespace
     """
-    parser = argparse.ArgumentParser(
-        description="Just a Fibonacci demonstration")
+    parser = argparse.ArgumentParser(description="Just a Fibonacci demonstration")
     parser.add_argument(
         "--version",
         action="version",
@@ -648,8 +644,8 @@ def setup_logging(loglevel):
     """
     logformat = "[%(asctime)s] %(levelname)s:%(name)s:%(message)s"
     logging.basicConfig(
-        level=loglevel, stream=sys.stdout, format=logformat,
-        datefmt="%Y-%m-%d %H:%M:%S")
+        level=loglevel, stream=sys.stdout, format=logformat, datefmt="%Y-%m-%d %H:%M:%S"
+    )
 
 
 def main(args):
