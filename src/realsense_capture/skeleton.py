@@ -78,7 +78,9 @@ def parse_args(args):
         action="version",
         version="realsense-capture {ver}".format(ver=__version__),
     )
-    parser.add_argument(dest="n", help="n-th Fibonacci number", type=int, metavar="INT")
+    # parser.add_argument(dest="n", help="n-th Fibonacci number",
+    #                     type=int, metavar="INT")
+    parser.add_argument("--n", help="n-th Fibonacci number", type=int, default=10)
     parser.add_argument(
         "-v",
         "--verbose",
