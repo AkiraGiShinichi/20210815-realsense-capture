@@ -23,11 +23,11 @@ References:
 import argparse
 import logging
 import sys
-
-import pyrealsense2 as rs
-from typing import List, Tuple
-import numpy as np
 from enum import Enum
+from typing import List, Tuple
+
+import numpy as np
+import pyrealsense2 as rs
 
 from realsense_capture import __version__
 
@@ -60,6 +60,7 @@ def fib(n):
         a, b = b, a + b
     return a
 
+
 # ----------------------------- Helper functions ----------------------------- #
 
 
@@ -73,9 +74,13 @@ class Device:
         product_line (str): Product-line
     """
 
-    def __init__(self, pipeline: rs.pipeline,
-                 pipeline_profile: rs.pipeline_profile, align: rs.align,
-                 product_line: str):
+    def __init__(
+        self,
+        pipeline: rs.pipeline,
+        pipeline_profile: rs.pipeline_profile,
+        align: rs.align,
+        product_line: str,
+    ):
         self.pipeline = pipeline
         self.pipeline_profile = pipeline_profile
         self.align = align
@@ -89,25 +94,32 @@ def enumerate_connected_devices(context: rs.context) -> List[Tuple[str, str]]:
         context (rs.context): The context created for using the realsense library
 
     Returns:
-        List[Tuple[str, str]]: List of (serial-number, product-line) of devices which are connected to the PC
+        List[Tuple[str, str]]: List of (serial-number, product-line) of devices
+            which are connected to the PC
     """
     connect_device = []
 
     for d in context.devices:
-        if d.get_info(rs.camera_info.name).lower() != 'platform camera':
+        if d.get_info(rs.camera_info.name).lower() != "platform camera":
             device_serial = d.get_info(rs.camera_info.serial_number)
             product_line = d.get_info(rs.camera_info.product_line)
             device_info = (device_serial, product_line)
             connect_device.append(device_info)
     return connect_device
 
+
 # TODO: What are good values to filter?
 
 
 def post_process_depth_frame(
-        depth_frame, decimation_magnitude=1.0, spatial_magnitude=2.0,
-        spatial_smooth_alpha=0.5, spatial_smooth_delta=20,
-        temporal_smooth_alpha=0.4, temporal_smooth_delta=20):
+    depth_frame,
+    decimation_magnitude=1.0,
+    spatial_magnitude=2.0,
+    spatial_smooth_alpha=0.5,
+    spatial_smooth_delta=20,
+    temporal_smooth_alpha=0.4,
+    temporal_smooth_delta=20,
+):
     """
     Filter the depth frame acquired using the Intel RealSense device
     Parameters:
@@ -132,7 +144,7 @@ def post_process_depth_frame(
                      The post-processed depth frame
     """
     # Post processing possible only on the depth_frame
-    assert (depth_frame.is_depth_frame())
+    assert depth_frame.is_depth_frame()
 
     # Available filters and control options for the filters
     decimation_filter = rs.decimation_filter()
@@ -164,18 +176,19 @@ class SingleInstanceMetaClass(type):
         try:
             return cls.__instance
         except AttributeError:
-            cls.__instance = super(
-                SingleInstanceMetaClass, cls).__call__(
-                *args, **kwargs)
+            cls.__instance = super(SingleInstanceMetaClass, cls).__call__(
+                *args, **kwargs
+            )
             return cls.__instance
 
 
-def get_depth_at_pixel(depth_frame: rs.frame,
-                       pixel_x: int, pixel_y: int) -> int:
+def get_depth_at_pixel(
+        depth_frame: rs.frame, pixel_x: int, pixel_y: int) -> int:
     """Get the depth value at the desired image point
 
     Args:
-        depth_frame (rs.frame): The depth frame containing the depth information of the image coordinate
+        depth_frame (rs.frame): The depth frame containing the depth information
+            of the image coordinate
         pixel_x (int): The x value of the image coordinate
         pixel_y (int): The y value of the image coordinate
 
@@ -185,15 +198,17 @@ def get_depth_at_pixel(depth_frame: rs.frame,
     return depth_frame.as_depth_frame().get_distance(round(pixel_x), round(pixel_y))
 
 
-def convert_depth_pixel_to_metric_coordinate(depth: float, pixel_x: float, pixel_y: float,
-                                             camera_intrinsics: rs.intrinsics) -> Tuple[float, float, float]:
+def convert_depth_pixel_to_metric_coordinate(
+    depth: float, pixel_x: float, pixel_y: float, camera_intrinsics: rs.intrinsics
+) -> Tuple[float, float, float]:
     """Convert the depth and image point information to metric coordinates
 
     Args:
         depth ([float]): The depth value of the image point
         pixel_x (float): The x value of the image coordinate
         pixel_y (float): The y value of the image coordinate
-        camera_intrinsics (rs.intrinsics): The intrinsic values of the imager in whose coordinate system the depth_frame is computed
+        camera_intrinsics (rs.intrinsics): The intrinsic values of the imager in
+            whose coordinate system the depth_frame is computed
 
     Returns:
         (X, Y, Z) (Tuple[float, float, float]): Coordinate of pixel
@@ -207,9 +222,11 @@ def convert_depth_pixel_to_metric_coordinate(depth: float, pixel_x: float, pixel
     return X, Y, Z
 
 
-def convert_depth_frame_to_points(depth_image: np.ndarray,
-                                  camera_intrinsics: rs.intrinsics,
-                                  depth_scale: float = 0.001) -> Tuple[np.ndarray]:
+def convert_depth_frame_to_points(
+    depth_image: np.ndarray,
+    camera_intrinsics: rs.intrinsics,
+    depth_scale: float = 0.001,
+) -> Tuple[np.ndarray]:
     """Convert depth frame to a 3D point cloud
 
     Args:
@@ -218,7 +235,8 @@ def convert_depth_frame_to_points(depth_image: np.ndarray,
         depth_scale (float, optional): Scale factor of depth. Defaults to 0.001.
 
     Returns:
-        (x, y, z) (Tuple[np.ndarray]): 3 list of x coordinates, y coordinates and z coordinates
+        (x, y, z) (Tuple[np.ndarray]): 3 list of x coordinates, y coordinates 
+            and z coordinates
         x (np.ndarray): x coordinates in meters
         y (np.ndarray): y coordinates in meters
         z (np.ndarray): z coordinates in meters
@@ -251,7 +269,7 @@ def convert_pointcloud_to_depth(pointcloud, camera_intrinsics):
     :y: The y coordiantes in image
     :rtype: tuple(array, array)
     """
-    assert (pointcloud.shape[0] == 3)
+    assert pointcloud.shape[0] == 3
 
     x_ = pointcloud[0, :]
     y_ = pointcloud[1, :]
@@ -272,6 +290,8 @@ def get_boundary_corners_2D(points):
 
 def get_clipped_pointcloud(pointcloud, boundary):
     pass
+
+
 # ---------------------------------------------------------------------------- #
 
 
@@ -297,10 +317,13 @@ class RealsenseCapture(metaclass=SingleInstanceMetaClass):
     """
 
     def __init__(
-            self, id: int = 0,
-            color_size: Tuple[int, int] = (640, 480),
-            depth_size: Tuple[int, int] = (640, 480),
-            fps: int = 30, serial: str = None) -> None:  #
+        self,
+        id: int = 0,
+        color_size: Tuple[int, int] = (640, 480),
+        depth_size: Tuple[int, int] = (640, 480),
+        fps: int = 30,
+        serial: str = None,
+    ) -> None:  #
         self._depth_size = depth_size
         self._color_size = color_size
         self._fps = fps
@@ -312,7 +335,8 @@ class RealsenseCapture(metaclass=SingleInstanceMetaClass):
             self._serial = serial
             self._device_id = self.get_device_id_from_serial(self._serial)
         self._device_serial, self._product_line = self.get_device_info_from_id(
-            self._device_id)
+            self._device_id
+        )
 
         self._enabled_device = None
 
@@ -320,9 +344,11 @@ class RealsenseCapture(metaclass=SingleInstanceMetaClass):
         depth_width, depth_height = self._depth_size
         self._config = rs.config()
         self._config.enable_stream(
-            rs.stream.color, color_width, color_height, rs.format.rgb8, fps)
+            rs.stream.color, color_width, color_height, rs.format.rgb8, fps
+        )
         self._config.enable_stream(
-            rs.stream.depth, depth_width, depth_height, rs.format.z16, fps)
+            rs.stream.depth, depth_width, depth_height, rs.format.z16, fps
+        )
 
         self._camera_is_open = False
         self._frames = None
@@ -332,7 +358,8 @@ class RealsenseCapture(metaclass=SingleInstanceMetaClass):
         Or providing exact device-serial, or providing device-id for convenience
 
         Args:
-            enable_ir_emitter (bool, optional): Enable/Disable the IR-Emitter of the device. Defaults to False.
+            enable_ir_emitter (bool, optional): Enable/Disable the IR-Emitter of the 
+                device. Defaults to False.
 
         Examples:
             realsense_capture.enable_device(0) # 1st method
@@ -347,8 +374,9 @@ class RealsenseCapture(metaclass=SingleInstanceMetaClass):
             # Set the acquisition parameters
             sensor = pipeline_profile.get_device().first_depth_sensor()
             if sensor.supports(rs.option.emitter_enabled):
-                sensor.set_option(rs.option.emitter_enabled, 1
-                                  if enable_ir_emitter else 0)
+                sensor.set_option(
+                    rs.option.emitter_enabled, 1 if enable_ir_emitter else 0
+                )
             # Create an align object
             # rs.align allows us to perform alignment of depth frames to others frames
             # The "align_to" is the stream type to which we plan to align depth frames.
@@ -356,18 +384,20 @@ class RealsenseCapture(metaclass=SingleInstanceMetaClass):
             align = rs.align(align_to)
 
             self._enabled_device = Device(
-                pipeline, pipeline_profile, align, self._product_line)
+                pipeline, pipeline_profile, align, self._product_line
+            )
 
             self._camera_is_open = True
-            print(f'\n    RealsenseCapture - initialized')
-        except:
-            print(f'\n    RealsenseCapture - initialized not success')
+            print(f"\n    RealsenseCapture - initialized")
+        except Exception as e:
+            print(f"\n    RealsenseCapture - initialized not success")
 
     def warm_up(self, dispose_frames_for_stablisation: int = 30) -> None:
         """Dispose some frames for camera-stablisation
 
         Args:
-            dispose_frames_for_stablisation (int, optional): Number of disposing frames. Defaults to 30.
+            dispose_frames_for_stablisation (int, optional): Number of disposing 
+                frames. Defaults to 30.
         """
         for _ in range(dispose_frames_for_stablisation):
             _ = self.read()
@@ -392,9 +422,9 @@ class RealsenseCapture(metaclass=SingleInstanceMetaClass):
                     DataType.IMAGES, depth_filter)
             else:  # Return RGB image only
                 return True, self.get_data_according_type(DataType.COLOR_IMAGE)
-        except:
+        except Exception as e:
             self._camera_is_open = False
-            print(f'\n    RealsenseCapture - read: error')
+            print(f"\n    RealsenseCapture - read: error")
             return False, None
 
     def isOpened(self):
@@ -406,9 +436,8 @@ class RealsenseCapture(metaclass=SingleInstanceMetaClass):
         return self._camera_is_open
 
     def release(self):
-        """Release/Disable cameras
-        """
-        print(f'\n    RealsenseCapture - release')
+        """Release/Disable cameras"""
+        print(f"\n    RealsenseCapture - release")
         self._config.disable_all_streams()
 
     def get_intrinsics(self, frame_type: DataType = DataType.COLOR_FRAME):
@@ -441,7 +470,9 @@ class RealsenseCapture(metaclass=SingleInstanceMetaClass):
             float: Depth-scale
         """
         # Getting the depth sensor's depth scale (see rs-align example for explanation)
-        depth_sensor = self._enabled_device.pipeline_profile.get_device().first_depth_sensor()
+        depth_sensor = (
+            self._enabled_device.pipeline_profile.get_device().first_depth_sensor()
+        )
         depth_scale = depth_sensor.get_depth_scale()
         return depth_scale
 
@@ -457,15 +488,19 @@ class RealsenseCapture(metaclass=SingleInstanceMetaClass):
         if color_frame is None or depth_frame is None:
             return None
 
-        extrinsics = depth_frame.get_profile().as_video_stream_profile(
-        ).get_extrinsics_to(color_frame.get_profile())
+        extrinsics = (
+            depth_frame.get_profile()
+            .as_video_stream_profile()
+            .get_extrinsics_to(color_frame.get_profile())
+        )
         return extrinsics
 
     def get_depth_frame(self, depth_filter: object = None):
         """Get depth frame
 
         Args:
-            depth_filter (object, optional): Function to filter depth frame. Defaults to None.
+            depth_filter (object, optional): Function to filter depth frame. 
+                Defaults to None.
 
         Returns:
             rs.depth_frame: Depth frame after filtered.
@@ -478,13 +513,16 @@ class RealsenseCapture(metaclass=SingleInstanceMetaClass):
             depth_frame = depth_filter(depth_frame)
         return depth_frame
 
-    def get_data_according_type(self, data_type: DataType = DataType.FRAMES,
-                                depth_filter=None):
+    def get_data_according_type(
+        self, data_type: DataType = DataType.FRAMES, depth_filter=None
+    ):
         """Get data according to type
 
         Args:
-            data_type (DataType, optional): Expected type of data. Defaults to DataType.FRAMES.
-            depth_filter ([type], optional): Function to filter depth frame. Defaults to None.
+            data_type (DataType, optional): Expected type of data. 
+                Defaults to DataType.FRAMES.
+            depth_filter ([type], optional): Function to filter depth frame. 
+                Defaults to None.
 
         Returns:
             rs.frame|ndarray|Tuple(ndarray): Data
@@ -504,8 +542,8 @@ class RealsenseCapture(metaclass=SingleInstanceMetaClass):
             return np.asarray(self.get_depth_frame(depth_filter).get_data())
         elif data_type == DataType.IMAGES:
             color_image = np.asarray(self._frames.get_color_frame().get_data())
-            depth_image = np.asarray(self.get_depth_frame(depth_filter)
-                                     .get_data())
+            depth_image = np.asarray(
+                self.get_depth_frame(depth_filter).get_data())
             return (color_image, depth_image)
 
     def get_device_id_from_serial(self, serial: str) -> int:
@@ -543,6 +581,8 @@ class RealsenseCapture(metaclass=SingleInstanceMetaClass):
             return None, None
         else:
             return self._available_devices[id]
+
+
 # ---------------------------------------------------------------------------- #
 
 
@@ -552,8 +592,9 @@ class Observation(Enum):
 
 
 def to_pick_out(arrays, conditions):
-    assert isinstance(arrays, tuple), 'Not be tuple of arrays'
+    assert isinstance(arrays, tuple), "Not be tuple of arrays"
     return [array[conditions] for array in arrays]
+
 
 # ---- CLI ----
 # The functions defined in this section are wrappers around the main Python
@@ -628,10 +669,8 @@ def main(args):
 
     # Initialize capture
     realsense_capture = RealsenseCapture(
-        id=0,
-        depth_size=(640, 480),
-        color_size=(640, 480),
-        fps=30)  # L515
+        id=0, depth_size=(640, 480), color_size=(640, 480), fps=30
+    )  # L515
     realsense_capture.enable_device()
     realsense_capture.warm_up()
 
